@@ -1,37 +1,51 @@
-namespace PokemonReviewApp
+using Microsoft.EntityFrameworkCore;
+using PokemonReviewApp.Data;
+using PokemonReviewApp;
+
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddControllers();
+builder.Services.AddTransient<Seed>();
+// Registers Swashbuckle generator
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddDbContext<DataContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+
+var app = builder.Build();
+
+if (args.Length == 1 && args[0].ToLower() == "seeddata")
+    SeedData(app);
+
+void SeedData(IHost app)
 {
-    public class Program
+    var scopedFactory = app.Services.GetService<IServiceScopeFactory>();
+
+    using (var scope = scopedFactory.CreateScope())
     {
-        public static void Main(string[] args)
-        {
-            var builder = WebApplication.CreateBuilder(args);
-
-            // Add services to the container.
-            builder.Services.AddControllers();
-
-            // Registers Swashbuckle generator
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-
-            var app = builder.Build();
-
-            // Configure the HTTP request pipeline. (Swagger Middleware)
-            if (app.Environment.IsDevelopment())
-            {
-                // Generates /swagger/v1/swagger.json
-                app.UseSwagger();
-
-                // Renders the Swagger UI web page using Swashbuckle's generated JSON
-                app.UseSwaggerUI();
-            }
-
-            app.UseHttpsRedirection();
-
-            app.UseAuthorization();
-
-            app.MapControllers();
-
-            app.Run();
-        }
+        var service = scope.ServiceProvider.GetService<Seed>();
+        service.SeedDataContext();
     }
 }
+
+// Configure the HTTP request pipeline. (Swagger Middleware)
+if (app.Environment.IsDevelopment())
+{
+    // Generates /swagger/v1/swagger.json
+    app.UseSwagger();
+
+    // Renders the Swagger UI web page using Swashbuckle's generated JSON
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();
+
