@@ -1,23 +1,32 @@
 using Microsoft.EntityFrameworkCore;
-using PokemonReviewApp.Data;
 using PokemonReviewApp;
-using PokemonReviewApp.Repository;
+using PokemonReviewApp.Data;
 using PokemonReviewApp.Interfaces;
-
+using PokemonReviewApp.Repository;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
 builder.Services.AddControllers();
 builder.Services.AddTransient<Seed>();
+builder.Services.AddControllers().AddJsonOptions(x =>
+                x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<IPokemonRepository, PokemonRepository>();
-// Registers Swashbuckle generator
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<ICountryRepository, CountryRepository>();
+builder.Services.AddScoped<IOwnerRepository, OwnerRepository>();
+builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+builder.Services.AddScoped<IReviewerRepository, ReviewerRepository>();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DataContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
 
 var app = builder.Build();
 
@@ -35,13 +44,19 @@ void SeedData(IHost app)
     }
 }
 
-// Configure the HTTP request pipeline. (Swagger Middleware)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+    db.Database.Migrate();
+}
+
+
+
+
+// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    // Generates /swagger/v1/swagger.json
     app.UseSwagger();
-
-    // Renders the Swagger UI web page using Swashbuckle's generated JSON
     app.UseSwaggerUI();
 }
 
@@ -52,4 +67,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
