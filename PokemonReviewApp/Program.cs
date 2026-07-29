@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using PokemonReviewApp.Data;
 using PokemonReviewApp;
+using PokemonReviewApp.Repository;
+using PokemonReviewApp.Interfaces;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddTransient<Seed>();
+builder.Services.AddScoped<IPokemonRepository, PokemonRepository>();
 // Registers Swashbuckle generator
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
